@@ -1,0 +1,259 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Model files and checkpoints
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.pb
+*.onnx
+*.tflite
+checkpoints/
+checkpoint/
+checkpoint-*/
+models/
+model_cache/
+*.pkl
+*.pickle
+
+# Hugging Face cache
+.cache/
+huggingface/
+transformers_cache/
+.huggingface/
+
+# Training outputs
+outputs/
+output/
+logs/
+log/
+runs/
+wandb/
+tensorboard/
+tb_logs/
+*.log
+
+# Data files (large datasets)
+*.csv
+*.tsv
+*.parquet
+*.arrow
+*.feather
+data/raw/
+data/processed/
+data_warehouse/*/raw_data/*.json
+data_warehouse/*/processed/
+*.db
+*.sqlite
+*.sqlite3
+
+# Keep config JSONs but ignore large data JSONs
+# Uncomment if you want to ignore all JSONs in data directories
+# data_warehouse/**/*.json
+
+# DeepSpeed
+deepspeed_logs/
+deepspeed_config.json
+
+# Accelerate
+accelerate_config.yaml
+
+# SwanLab
+swanlab/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+tmp/
+temp/
+.tmp/
+
+# Database connection files (may contain sensitive info)
+**/db_conn.json
+**/*_conn.json
+**/config.json
+**/secrets.json
+**/.env.local
+
+# Large files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Compiled models
+*.model
+*.weights
+
+# Claude AI
+.claude/
+claude_cache/
+*.claude
+claude_config.json
+claude_api_key.txt
+.claude_history
+.claude_sessions/
