@@ -1,0 +1,26 @@
+[
+    {
+        "db_id": "movie_platform",
+        "db_name": "movie_platform",
+        "question": "Name movie titles released in year 1945. Sort the listing by the descending order of movie popularity.",
+        "evidence": "released in the year 1945 refers to movie_release_year = 1945;",
+        "SQL": "SELECT movie_title FROM movies WHERE movie_release_year = 1945 ORDER BY movie_popularity DESC LIMIT 1",
+        "db_schema": "CREATE TABLE movies (\n  movie_id INTEGER PRIMARY KEY,\n  movie_title TEXT NOT NULL,\n  movie_release_year INTEGER,\n  movie_popularity REAL,\n  director_name TEXT\n);\n-- Examples from movies:\n-- movie_id | movie_title | movie_release_year | movie_popularity | director_name\n-- 1 | The Great Adventure | 1945 | 8.5 | John Smith\n-- 2 | War Stories | 1945 | 7.2 | Jane Doe"
+    },
+    {
+        "db_id": "movie_platform",
+        "db_name": "movie_platform",
+        "question": "State the most popular movie? When was it released and who is the director for the movie?",
+        "evidence": "most popular movie refers to MAX(movie_popularity); when it was released refers to movie_release_year; director for the movie refers to director_name;",
+        "SQL": "SELECT movie_title, movie_release_year, director_name FROM movies ORDER BY movie_popularity DESC LIMIT 1",
+        "db_schema": "CREATE TABLE movies (\n  movie_id INTEGER PRIMARY KEY,\n  movie_title TEXT NOT NULL,\n  movie_release_year INTEGER,\n  movie_popularity REAL,\n  director_name TEXT\n);\n-- Examples from movies:\n-- movie_id | movie_title | movie_release_year | movie_popularity | director_name\n-- 1 | The Great Adventure | 1945 | 8.5 | John Smith\n-- 2 | War Stories | 1945 | 7.2 | Jane Doe"
+    },
+    {
+        "db_id": "movie_platform",
+        "db_name": "movie_platform",
+        "question": "What is the average number of Mubi users who love movies directed by Stanley Kubrick?",
+        "evidence": "average = AVG(movie_popularity); number of Mubi users who loves the movie refers to movie_popularity;",
+        "SQL": "SELECT AVG(movie_popularity) FROM movies WHERE director_name = 'Stanley Kubrick'",
+        "db_schema": "CREATE TABLE movies (\n  movie_id INTEGER PRIMARY KEY,\n  movie_title TEXT NOT NULL,\n  movie_release_year INTEGER,\n  movie_popularity REAL,\n  director_name TEXT\n);\n-- Examples from movies:\n-- movie_id | movie_title | movie_release_year | movie_popularity | director_name\n-- 1 | The Great Adventure | 1945 | 8.5 | John Smith\n-- 2 | War Stories | 1945 | 7.2 | Jane Doe"
+    }
+]

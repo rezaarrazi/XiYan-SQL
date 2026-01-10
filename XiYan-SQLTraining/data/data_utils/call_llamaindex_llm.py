@@ -1,7 +1,13 @@
 import time
-from llama_index.core.llms import LLM, ChatMessage
-from llama_index.core.prompts import BasePromptTemplate, PromptTemplate
-from llama_index.core.prompts.prompt_type import PromptType
+try:
+    from llama_index.core.llms import LLM, ChatMessage
+    from llama_index.core.prompts import BasePromptTemplate, PromptTemplate
+    from llama_index.core.prompts.prompt_type import PromptType
+except ImportError:
+    # Fallback for older llama-index versions
+    from llama_index.llms.base import LLM, ChatMessage
+    from llama_index.prompts.base import BasePromptTemplate, PromptTemplate
+    from llama_index.prompts.prompt_type import PromptType
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Sequence
 
 

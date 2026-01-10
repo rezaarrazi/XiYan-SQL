@@ -1,0 +1,11 @@
+CREATE TABLE movies (
+  movie_id INTEGER PRIMARY KEY,
+  movie_title TEXT NOT NULL,
+  movie_release_year INTEGER,
+  movie_popularity REAL,
+  director_name TEXT
+);
+-- Examples from movies:
+-- movie_id | movie_title | movie_release_year | movie_popularity | director_name
+-- 1 | The Great Adventure | 1945 | 8.5 | John Smith
+-- 2 | War Stories | 1945 | 7.2 | Jane Doe

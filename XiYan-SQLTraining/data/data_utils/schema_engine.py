@@ -3,8 +3,13 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Integer, select, text
 from sqlalchemy.engine import Engine
-from llama_index.core import SQLDatabase
-from llama_index.core.llms import LLM
+try:
+    from llama_index.core import SQLDatabase
+    from llama_index.core.llms import LLM
+except ImportError:
+    # Fallback for older llama-index versions
+    from llama_index import SQLDatabase
+    from llama_index.llms.base import LLM
 
 from data_utils.call_llamaindex_llm import call_llm, call_llm_message
 from data_utils.call_llamaindex_llm import (

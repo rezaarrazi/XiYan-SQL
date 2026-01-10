@@ -4,7 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-XiYan-SQL is a natural language to SQL conversion framework that employs a multi-generator ensemble strategy. The repository includes the **XiYan-SQLTraining** framework for training SQL LLMs with capabilities for data processing, model training (including MOE multi-dialect models), and evaluation.
+XiYan-SQL is a natural language to SQL conversion framework that employs a multi-generator ensemble strategy. This repository (**XiYan-SQLTraining**) implements the **training component** that creates the SQL generators used in the full system.
+
+### Full XiYan-SQL Pipeline
+
+The complete XiYan-SQL system operates in 4 stages:
+1. **Inputs**: Question, Evidence (hints), Full Database Schema
+2. **Schema Filter**: Intelligently filter schema to relevant tables/columns
+3. **Multiple SQL Generation**: 4 generators (SQLG₁-₄) produce SQL candidates
+4. **SQL Selection**: Ensemble voting/selection to choose best SQL
+
+**This repository trains the generators for Stage 3.** Schema filtering at inference time and ensemble selection are separate components not included here.
+
+**📖 For detailed training strategies and implementation guide, see [`XiYan-SQLTraining/TRAINING_STRATEGIES.md`](XiYan-SQLTraining/TRAINING_STRATEGIES.md)**
 
 ## Key Architecture Components
 
@@ -225,3 +237,5 @@ This connects to actual databases and executes both predicted and ground-truth S
 - `group_by_length=True` recommended for efficiency with variable-length SQL queries
 - SwanLab has replaced wandb for experiment tracking (configure via environment variables if needed)
 - Standard SFT uses `torch_compile=False`, MOMQ uses `torch_compile=True` by default
+- to memorize
+- to memorize

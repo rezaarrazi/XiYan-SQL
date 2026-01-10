@@ -4,13 +4,13 @@
     "sample_num": -1,
     "sum_num": 221,
     "task_name": "nl2sqlite",
-    "data_aug": true
+    "data_aug": false
   },
   "test_data_processed_data_test_train_nl2sqlite": {
     "data_path": "data_warehouse/test_data/processed_data/test_train_nl2sqlite.json",
     "sample_num": -1,
     "sum_num": 3,
     "task_name": "nl2sqlite",
-    "data_aug": true
+    "data_aug": false
   }
 }
