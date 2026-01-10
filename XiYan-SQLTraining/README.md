@@ -20,19 +20,51 @@ The framework is continuously being improved, and we welcome contributions from 
 
 ## Usage
 
+### System Requirements
+
+**Platform:**
+- **Linux required** - DeepSpeed requires Linux-specific libraries (libaio) and has symlink permission issues on Windows
+- **Windows users must use WSL2** (Windows Subsystem for Linux 2)
+
+**CUDA:**
+- **Minimum: CUDA 12.6** (PyTorch 2.9.0 is built for CUDA 12.6)
+- Verify your CUDA version: `nvcc --version` or `nvidia-smi`
+
+**Python:**
+- Python 3.10 or higher
+
 ### Environment Preparation
 
-1. Create a Conda Environment: Use the following commands to create and activate a new environment for training:
+**Option 1: Using uv (Recommended)**
+
+1. Install uv if you haven't already:
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+2. Set up the environment:
+```bash
+cd XiYan-SQLTraining
+uv sync
+```
+
+All scripts automatically use `uv run` - no manual activation needed!
+
+**Option 2: Using Conda**
+
+1. Create a Conda Environment:
 ```bash
 conda create -n xiyansql python=3.10
 conda activate xiyansql
 ```
 
-2. Install Dependencies After activating the environment, run the following command to install the required dependencies:
+2. Install Dependencies:
 ```bash
-pip install -r requirements.txt
+cd XiYan-SQLTraining
+uv pip install -e .  # Install from pyproject.toml
 ```
-NVidia driver CUDA versions 11.8-12.4 have been tested and are compatible, but the versions of required dependencies can be upgraded as needed.
+
+Note: With conda, you must activate the environment before running scripts.
 
 ### Data Preparation
 
@@ -97,15 +129,22 @@ The overall process is located in the `train/` folder:
 
 1. Prepare the model; the script to download the model is provided in `train/utils` to choose a source based on your network conditions:
 ```bash
-python model_download.py
+cd train/utils
+uv run model_download.py
 ```
+
 2. The SFT training script is xiyan_sft.sh:
 ```bash
+cd train
 bash xiyan_sft.sh
 ```
 You need to prepare the training data, model, and training hyperparameters as described above. For larger models, consider enabling LoRA (it is recommended to first use the QWEN2.5 series model to start training).
 
-3. If training with LoRA, you need to merge the saved adapter with the original model. The script for this can be found in `utils/adapter_merge.py`.
+3. If training with LoRA, you need to merge the saved adapter with the original model:
+```bash
+cd train
+uv run utils/adapter_merge.py
+```
 
 ## Model Evaluation
 The overall process is in the `evaluation/` folder; it is recommended to keep each part of the data in a separate folder, such as `evaluation/bird_evaluation`.

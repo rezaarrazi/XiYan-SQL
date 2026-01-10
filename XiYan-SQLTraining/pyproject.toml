@@ -1,0 +1,40 @@
+[project]
+name = "xiyan-sqltraining"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "accelerate>=1.12.0",
+    "datasets>=2.14.4",
+    "deepspeed>=0.18.4",
+    "llama-index>=0.9.6.post2",
+    "markupsafe<3.0",
+    "modelscope>=1.33.0",
+    "mysql-connector>=2.2.9",
+    "mysql-connector-python>=9.5.0",
+    "ninja>=1.13.0",
+    "numpy>=2.2.6",
+    "packaging>=24.1",
+    "pandas>=2.3.3",
+    "peft>=0.18.1",
+    "protobuf>=6.33.3",
+    "psycopg2-binary>=2.9.11",
+    "sentencepiece>=0.2.1",
+    "setuptools>=70.2.0",
+    "sqlalchemy>=2.0.45",
+    "sqlglot>=28.5.0",
+    "swanlab>=0.7.6",
+    "textdistance>=4.6.3",
+    "torch==2.9.0",
+    "torchaudio==2.9.0",
+    "torchvision==0.24.0",
+    "transformers>=4.57.3",
+    "wheel>=0.45.1",
+]
+
+[tool.uv]
+no-build-isolation-package = ['flash-attn']
+
+[[tool.uv.index]]
+url = "https://download.pytorch.org/whl/cu126"

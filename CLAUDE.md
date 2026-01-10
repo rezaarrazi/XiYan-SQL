@@ -84,14 +84,46 @@ Evaluation connects to actual databases to verify SQL correctness (execution acc
 
 ## Common Development Commands
 
-### Environment Setup
-```bash
-uv venv --python 3.10
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -r XiYan-SQLTraining/requirements.txt
-```
+### System Requirements
 
-Requirements: PyTorch 2.3.1, transformers 4.42.3, DeepSpeed 0.12.0, PEFT 0.11.1, flash-attn 2.5.9
+**Platform:**
+- **Linux required** - DeepSpeed requires Linux-specific libraries (libaio) and has symlink permission issues on Windows
+- **Windows users must use WSL2** (Windows Subsystem for Linux 2)
+
+**CUDA:**
+- **Minimum: CUDA 12.6** (PyTorch 2.9.0 is built for CUDA 12.6)
+- CUDA versions 11.8-12.4 may work with older PyTorch versions but are not officially supported in current setup
+- Verify your CUDA version: `nvcc --version` or `nvidia-smi`
+
+**Python:**
+- Python 3.10 or higher (specified in pyproject.toml)
+
+### Environment Setup
+
+**Using uv (recommended):**
+```bash
+cd XiYan-SQLTraining
+uv sync
+```
+All scripts use `uv run` to automatically use the correct virtual environment. No manual activation needed.
+
+**Using conda (alternative):**
+```bash
+conda create -n xiyansql python=3.10
+conda activate xiyansql
+cd XiYan-SQLTraining
+uv pip install -e .  # Install from pyproject.toml
+```
+With conda, you must activate the environment before running any scripts.
+
+**Key Dependencies:**
+- PyTorch 2.9.0+cu126 (CUDA 12.6)
+- transformers 4.57.3+
+- DeepSpeed 0.18.4+ (Linux only)
+- PEFT 0.18.1+
+- accelerate 1.12.0+
+- SwanLab 0.7.6+
+- flash-attn (built without isolation, configured in pyproject.toml)
 
 ### Data Processing
 
@@ -111,7 +143,7 @@ bash data_assembler.sh <dataset_config_path> <save_path>
 **Download model:**
 ```bash
 cd XiYan-SQLTraining/train/utils
-python model_download.py
+uv run model_download.py
 ```
 
 **Standard SFT training:**
@@ -125,23 +157,42 @@ bash xiyan_sft.sh
 bash xiyan_momq_sft.sh
 ```
 
+**Multi-node distributed training:**
+Set environment variables before running training scripts:
+```bash
+export MASTER_ADDR=<master_node_ip>
+export MASTER_PORT=12547
+export WORLD_SIZE=<total_num_nodes>
+export RANK=<current_node_rank>  # 0 for master, 1,2,... for workers
+```
+
 **Merge LoRA adapter:**
 ```bash
-python utils/adapter_merge.py
+cd XiYan-SQLTraining/train
+uv run utils/adapter_merge.py
 ```
 
 ### Model Evaluation
 
-**Run inference:**
+**Run inference (single GPU):**
 ```bash
 cd XiYan-SQLTraining/evaluation
 bash sql_infer.sh <model_path> <expr_version> <test_set_path> <batch_size>
+```
+
+**Run inference (multi-GPU with accelerate):**
+```bash
+cd XiYan-SQLTraining/evaluation
+CUDA_VISIBLE_DEVICES=0,1 uv run accelerate launch --num_processes 2 --config_file config/zero2.yaml \
+  sql_infer.py --model_name_or_path <model_path> --expr_version <version> \
+  --test_set_path <test_set> --batch_size <batch_size>
 ```
 
 **Evaluate results:**
 ```bash
 bash sql_eval.sh <pred_sql_path> <test_sql_path> <db_conn_config> <save_eval_path>
 ```
+This connects to actual databases and executes both predicted and ground-truth SQL to verify correctness.
 
 ## Important Configuration Files
 
@@ -159,8 +210,10 @@ bash sql_eval.sh <pred_sql_path> <test_sql_path> <db_conn_config> <save_eval_pat
 - `num_experts`, `num_experts_per_tok`: MOE configuration
 
 **Data:**
-- Raw data must include: `db_name`/`db_id`, `question`, and either `db_schema` or database connection info
+- Raw data format: JSON list with entries containing `db_name`/`db_id`, `question`, and either `db_schema` or database connection info
 - Processed data includes M-Schema with examples and metadata
+- Final training data: conversation format with `id`, `conversations` array (user/assistant roles), and `sql_type` field
+- Example training data available at `train/datasets/train_examples.json`
 
 ## Architecture Notes
 
@@ -170,3 +223,5 @@ bash sql_eval.sh <pred_sql_path> <test_sql_path> <db_conn_config> <save_eval_pat
 - MOE mode routes by `sql_type` field using first token position for dialect embedding
 - DeepSpeed Zero2 is recommended for most use cases; Zero3 for very large models
 - `group_by_length=True` recommended for efficiency with variable-length SQL queries
+- SwanLab has replaced wandb for experiment tracking (configure via environment variables if needed)
+- Standard SFT uses `torch_compile=False`, MOMQ uses `torch_compile=True` by default
