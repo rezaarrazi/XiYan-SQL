@@ -139,10 +139,13 @@ class DeepCustomTrainer(Trainer):
             # reset tr_loss to zero
             tr_loss -= tr_loss
 
-            logs["loss"] = round(tr_loss_scalar / (self.state.global_step - self._globalstep_last_logged), 4)
+            logs["loss"] = tr_loss_scalar / (self.state.global_step - self._globalstep_last_logged)
             if grad_norm is not None:
-                logs["grad_norm"] = grad_norm.detach().item() if isinstance(grad_norm, torch.Tensor) else grad_norm
-            logs["learning_rate"] = self._get_learning_rate()
+                logs["grad_norm"] = grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm
+            if learning_rate is not None:
+                logs["learning_rate"] = learning_rate
+            else:
+                logs["learning_rate"] = self._get_learning_rate()
 
             if hasattr(self.control, 'extra_losses'):
                 for k, v in self.control.extra_losses.items():
@@ -156,7 +159,7 @@ class DeepCustomTrainer(Trainer):
             self._globalstep_last_logged = self.state.global_step
             self.store_flos()
 
-            self.log(logs)
+            self.log(logs, start_time)
 
         metrics = None
         if self.control.should_evaluate:
@@ -174,9 +177,9 @@ class DeepCustomTrainer(Trainer):
             self._save_checkpoint(model, trial)
             self.control = self.callback_handler.on_save(self.args, self.state, self.control)
 
-    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None, **kwargs):
         if hasattr(self.control, 'extra_losses') and model.training:
-            loss, outputs = super().compute_loss(model, inputs, return_outputs=True, **kwargs)
+            loss, outputs = super().compute_loss(model, inputs, return_outputs=True, num_items_in_batch=num_items_in_batch, **kwargs)
 
             if not isinstance(outputs, dict):
                 raise ValueError("The model output should be a dictionary or ModelOutput and not a tuple or list.")
@@ -189,7 +192,7 @@ class DeepCustomTrainer(Trainer):
 
             return (loss, outputs) if return_outputs else loss
         else:
-            return super().compute_loss(model, inputs, return_outputs=return_outputs, **kwargs)
+            return super().compute_loss(model, inputs, return_outputs=return_outputs, num_items_in_batch=num_items_in_batch, **kwargs)
     @staticmethod
     def load_generation_config(gen_config_arg: Union[str, GenerationConfig]) -> GenerationConfig:
         """
@@ -249,7 +252,7 @@ class DeepCustomTrainer(Trainer):
         if output_dir is None:
             output_dir = self.args.output_dir
 
-        
+        # Handle FSDP with custom MOE LoRA logic
         if self.is_fsdp_enabled:
             if ("FULL_STATE_DICT" in str(self.accelerator.state.fsdp_plugin.state_dict_type)) and (
                 version.parse(accelerate_version) > version.parse("0.24.1")
@@ -261,6 +264,13 @@ class DeepCustomTrainer(Trainer):
                     state_dict = self.accelerator.get_state_dict(self.model)
                 if self.args.should_save:
                     self._save(output_dir, state_dict=state_dict)
+                # Push to the Hub when `save_model` is called by the user.
+                if self.args.push_to_hub and not _internal_call:
+                    self.push_to_hub(commit_message="Model save", revision=self.args.hub_revision)
+            else:
+                # For other FSDP cases, use parent implementation
+                super().save_model(output_dir, _internal_call=_internal_call)
+        # Handle DeepSpeed with custom MOE LoRA logic
         elif self.is_deepspeed_enabled:
             try:
                 if self.args.use_moe_lora:
@@ -280,13 +290,12 @@ class DeepCustomTrainer(Trainer):
                 # remove the dummy state_dict
                 remove_dummy_checkpoint(self.args.should_save, output_dir, [WEIGHTS_NAME, SAFE_WEIGHTS_NAME])
                 self.model_wrapped.save_checkpoint(output_dir)
-
-        elif self.args.should_save:
-            self._save(output_dir)
-
-        # Push to the Hub when `save_model` is called by the user.
-        if self.args.push_to_hub and not _internal_call:
-            self.push_to_hub(commit_message="Model save")
+            # Push to the Hub when `save_model` is called by the user.
+            if self.args.push_to_hub and not _internal_call:
+                self.push_to_hub(commit_message="Model save", revision=self.args.hub_revision)
+        else:
+            # For all other cases (TPU, SageMaker, regular, etc.), use parent implementation
+            super().save_model(output_dir, _internal_call=_internal_call)
 
     def evaluate(
         self,
