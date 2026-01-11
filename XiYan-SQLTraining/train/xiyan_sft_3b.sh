@@ -68,11 +68,11 @@ run_training() {
 
 
 # ============================================================================
-# CONFIGURATION SECTION - Edit these parameters for each generator
+# CONFIGURATION SECTION - Edit these parameters for your training
 # ============================================================================
 
 # Experiment ID - Change this for each training run
-EXPR_ID="sqlg1_3b_heavy_aug"
+EXPR_ID="nl2sql_3b_standard"
 
 # Model path - Qwen2.5-Coder-3B-Instruct
 MODEL="model/Qwen/Qwen2.5-Coder-3B-Instruct"
@@ -101,8 +101,8 @@ SAVE_STEP=500            # Save checkpoint every N steps
 GROUP_BY_LENGTH=True     # Group samples by length for efficiency
 SHUFFLE=True             # Shuffle training data
 
-# Dataset and output paths - EDIT THESE FOR EACH GENERATOR
-DATA="datasets/sqlg1_heavy_aug_train.json"
+# Dataset and output paths
+DATA="datasets/nl2sql_standard_train.json"
 OUTPUT="output/dense/${EXPR_ID}/"
 
 # Optional: Enable evaluation during training
