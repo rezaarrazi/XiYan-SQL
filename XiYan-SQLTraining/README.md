@@ -69,7 +69,9 @@ This gives you a solid baseline Text-to-SQL model. While the paper uses all 4 ta
 - **Linux or WSL2** (DeepSpeed requires Linux-specific libraries)
 - **CUDA 12.6+** (PyTorch 2.9.0 requirement)
 - **Python 3.10+**
-- **8x A100 40GB GPUs** (or 4x with adjusted batch size)
+- **GPU Options**:
+  - **Recommended**: 8x A100 40GB GPUs (or 4x with adjusted batch size)
+  - **Low Memory**: 1x RTX 3080 Ti 8GB (see [Low Memory Training](LOW_MEMORY_TRAINING.md) - slower but works!)
 
 ### Complete Training Flow (3 Steps)
 
@@ -133,6 +135,7 @@ uv run adapter_merge.py \
 - 8x A100 40GB: ~18-20GB per GPU ✅
 - 8x RTX 3090 24GB: ~18-22GB per GPU ✅
 - 4x A100 40GB: ~25-30GB per GPU ✅
+- **1x RTX 3080 Ti 8GB**: ~6-7GB ✅ (see [Low Memory Training Guide](LOW_MEMORY_TRAINING.md))
 
 ---
 

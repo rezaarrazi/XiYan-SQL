@@ -237,6 +237,3 @@ This connects to actual databases and executes both predicted and ground-truth S
 - `group_by_length=True` recommended for efficiency with variable-length SQL queries
 - SwanLab has replaced wandb for experiment tracking (configure via environment variables if needed)
 - Standard SFT uses `torch_compile=False`, MOMQ uses `torch_compile=True` by default
-- to memorize
-- to memorize
-- to memorize
