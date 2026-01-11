@@ -260,7 +260,6 @@ claude_api_key.txt
 
 # XiYan-SQLTraining: Dataset directories
 XiYan-SQLTraining/data/data_warehouse/
-XiYan-SQLTraining/train/datasets/
 
 # XiYan-SQLTraining: Model directories
 XiYan-SQLTraining/train/model/

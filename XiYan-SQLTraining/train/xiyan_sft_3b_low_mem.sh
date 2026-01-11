@@ -99,7 +99,7 @@ GROUP_BY_LENGTH=True     # Group samples by length for efficiency
 SHUFFLE=True             # Shuffle training data
 
 # Dataset and output paths
-DATA="datasets/nl2sql_standard_train.json"
+DATA="datasets/nl2sql_standard_train_en.json"  # English prompts
 OUTPUT="output/dense/${EXPR_ID}/"
 
 # Optional: Enable evaluation during training

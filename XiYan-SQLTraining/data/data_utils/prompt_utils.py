@@ -168,9 +168,14 @@ NL2SQLITE_TEMPLATE_EN = """You are a SQLite expert. You need to read and underst
 
 
 
-def gen_train_prompt(idx: int, data_item: dict, task_type: str) -> dict:
+def gen_train_prompt(idx: int, data_item: dict, task_type: str, use_english: bool = True) -> dict:
     """
     generate train samples
+    Args:
+        idx: sample index
+        data_item: data item dict
+        task_type: task type (nl2sqlite, nl2postgresql, etc.)
+        use_english: if True, use English templates; if False, use Chinese templates
     """
     question = data_item["question"]
     evidence = data_item.get("evidence", "")
@@ -178,10 +183,10 @@ def gen_train_prompt(idx: int, data_item: dict, task_type: str) -> dict:
     task_type = task_type.lower()
 
     if task_type == "nl2sqlite":
-        prompt = NL2SQLITE_TEMPLATE.format(db_schema=db_schema.strip(), question=question, evidence=evidence)
+        prompt = NL2SQLITE_TEMPLATE_EN.format(db_schema=db_schema.strip(), question=question, evidence=evidence) if use_english else NL2SQLITE_TEMPLATE.format(db_schema=db_schema.strip(), question=question, evidence=evidence)
     elif task_type == "nl2postgresql":
-        prompt = NL2PGSQL_TEMPLATE.format(db_schema=db_schema.strip(), question=question, evidence=evidence)
-    elif task_type == "nl2sqlite":
+        prompt = NL2PGSQL_TEMPLATE_EN.format(db_schema=db_schema.strip(), question=question, evidence=evidence) if use_english else NL2PGSQL_TEMPLATE.format(db_schema=db_schema.strip(), question=question, evidence=evidence)
+    elif task_type == "nl2mysql":
         prompt = NL2MYSQL_TEMPLATE.format(db_schema=db_schema.strip(), question=question, evidence=evidence)
     elif task_type == "self_refine":
         error_sql = data_item["pred_sql_res"][0]
