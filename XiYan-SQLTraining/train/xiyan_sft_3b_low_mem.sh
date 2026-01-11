@@ -8,6 +8,7 @@
 # wandb has been deprecated, now use swanlab
 #export WANDB_PROJECT='xiyan-sql-3b'
 export CUDA_VISIBLE_DEVICES=0  # Single GPU
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True  # Reduce fragmentation
 
 # Basic distributed training configuration
 GPUS_PER_NODE=$(uv run python -c "import torch; print(torch.cuda.device_count());")
@@ -81,17 +82,17 @@ MODEL="model/Qwen/Qwen2.5-Coder-3B-Instruct"
 EPOCH=5                  # Number of epochs
 LR=2e-6                  # Learning rate
 WEIGHT_DECAY=0.1         # Weight decay
-MAX_LENGTH=4096          # REDUCED: 4096 instead of 10240 (critical for memory)
+MAX_LENGTH=2048          # FURTHER REDUCED: 2048 for 8GB (was 4096)
 
 # LoRA Configuration - REQUIRED for 8GB VRAM
 USE_LORA=True            # MUST be True for 8GB VRAM
-LORA_R=64                # REDUCED: 64 instead of 512 (much lower memory)
+LORA_R=32                # FURTHER REDUCED: 32 for 8GB (was 64)
 LORA_SCALE=2             # Increased alpha to compensate
 
 # Batch size and gradient accumulation - CRITICAL for 8GB VRAM
 BATCH_SIZE=1             # MINIMUM: Must be 1 for 8GB
-ACC_STEP=32              # INCREASED: Compensate with high accumulation
-                         # Effective batch size = 1 × 32 × 1 GPU = 32
+ACC_STEP=64              # FURTHER INCREASED: Compensate with higher accumulation
+                         # Effective batch size = 1 × 64 × 1 GPU = 64
 
 SAVE_STEP=100            # Save more frequently (fewer steps per epoch)
 GROUP_BY_LENGTH=True     # Group samples by length for efficiency
@@ -118,12 +119,13 @@ echo "Output: $OUTPUT"
 echo ""
 echo "MEMORY OPTIMIZATIONS:"
 echo "  - LoRA enabled: $USE_LORA (rank: $LORA_R)"
-echo "  - Max length: $MAX_LENGTH (reduced from 10240)"
+echo "  - Max length: $MAX_LENGTH (VERY LOW for 8GB)"
 echo "  - Batch size: $BATCH_SIZE"
 echo "  - Gradient accumulation: $ACC_STEP"
 echo "  - Effective batch size: $((BATCH_SIZE * ACC_STEP * WORLD_SIZE))"
 echo "  - DeepSpeed: Zero3 with CPU offload"
-echo "  - Flash Attention: Disabled (compatibility)"
+echo "  - Flash Attention: Disabled"
+echo "  - CUDA Memory: Expandable segments enabled"
 echo ""
 echo "Expected VRAM usage: ~6-7GB on RTX 3080 Ti"
 echo "Training will be SLOW but should fit in memory!"

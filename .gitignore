@@ -257,3 +257,12 @@ claude_config.json
 claude_api_key.txt
 .claude_history
 .claude_sessions/
+
+# XiYan-SQLTraining: Dataset directories
+XiYan-SQLTraining/data/data_warehouse/
+XiYan-SQLTraining/train/datasets/
+
+# XiYan-SQLTraining: Model directories
+XiYan-SQLTraining/train/model/
+XiYan-SQLTraining/train/output/
+XiYan-SQLTraining/train/merged_models/

@@ -13,8 +13,13 @@ from trainer.trainer import DeepCustomTrainer
 from trainer.argument import ModelArguments, TrainingArguments, DataArguments, LoraArguments
 from trainer.train_util import load_tokenizer_and_model, DataCollatorForGeneration
 from datasets import load_dataset, concatenate_datasets
-from datasets import set_caching_enabled
-set_caching_enabled(True)
+try:
+    from datasets import set_caching_enabled
+    set_caching_enabled(True)
+except ImportError:
+    # datasets >= 3.0 uses enable_caching/disable_caching
+    from datasets import enable_caching
+    enable_caching()
 from utils.common_utils import read_json, write_json
 
 # Use swanlab to visualize training records
