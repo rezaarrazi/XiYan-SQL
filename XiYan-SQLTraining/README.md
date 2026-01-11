@@ -106,6 +106,10 @@ bash data_assembler.sh \
 cd ../train
 bash xiyan_sft_3b.sh
 
+# Monitor training (in another terminal)
+swanlab watch train/output/dense/nl2sql_3b_standard/swanlab
+# Opens dashboard at http://localhost:5092
+
 # Merge LoRA adapter (if using LoRA)
 cd utils
 uv run adapter_merge.py \
@@ -140,6 +144,18 @@ uv run adapter_merge.py \
 ---
 
 ## Training Guide
+
+### Important: Experiment Tracking
+
+This framework uses **SwanLab** for automatic experiment tracking. All training metrics (loss, learning rate, GPU usage) are automatically logged.
+
+**Quick Access**:
+- **Local Dashboard**: `swanlab watch train/output/dense/<experiment_name>/swanlab`
+- **Cloud Dashboard**: `swanlab login` then visit https://swanlab.cn/@your-username/SQLTrainer
+
+No configuration needed - it works out of the box! See [Monitoring Training](#monitor-training) for details.
+
+---
 
 ### 1. Data Preparation
 
@@ -233,6 +249,22 @@ LORA_R=512
 
 #### Monitor Training
 
+**SwanLab Dashboard** (Recommended - automatically enabled):
+
+Training metrics are automatically tracked with SwanLab. View real-time progress:
+
+```bash
+# Option 1: Local web dashboard
+swanlab watch train/output/dense/nl2sql_3b_standard/swanlab
+# Opens browser at http://localhost:5092
+
+# Option 2: Cloud dashboard (optional - requires login)
+swanlab login  # First time only
+# Then visit: https://swanlab.cn/@your-username/SQLTrainer
+```
+
+**Command Line Monitoring**:
+
 ```bash
 # Check GPU usage
 nvidia-smi
@@ -246,6 +278,13 @@ tail -f train/output/dense/nl2sql_3b_standard/training.log
 # After 3 epochs: ~0.5-0.8
 # After 5 epochs: ~0.3-0.6
 ```
+
+**What SwanLab Tracks**:
+- Loss curves (training/validation)
+- Learning rate schedule
+- GPU memory usage
+- Training speed (steps/sec)
+- Custom metrics
 
 ### 3. Merge LoRA Adapter
 
@@ -515,6 +554,20 @@ XiYan-SQLTraining/
 - Optimized hyperparameters (LR=2e-6, Batch=2)
 - LoRA support (rank=512)
 - DeepSpeed Zero2 integration
+
+**Experiment Tracking** (SwanLab):
+- Automatic logging of training metrics
+- Real-time visualization dashboard
+- Project: `SQLTrainer`, Experiment: `expr_id` parameter
+- Local and cloud viewing options
+- Commands:
+  ```bash
+  # Local dashboard
+  swanlab watch train/output/dense/<expr_id>/swanlab
+
+  # Cloud dashboard (after swanlab login)
+  # Visit: https://swanlab.cn/@username/SQLTrainer
+  ```
 
 ---
 
