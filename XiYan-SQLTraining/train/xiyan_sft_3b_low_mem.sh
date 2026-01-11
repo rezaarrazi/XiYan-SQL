@@ -10,7 +10,7 @@
 export CUDA_VISIBLE_DEVICES=0  # Single GPU
 
 # Basic distributed training configuration
-GPUS_PER_NODE=$(python -c "import torch; print(torch.cuda.device_count());")
+GPUS_PER_NODE=$(uv run python -c "import torch; print(torch.cuda.device_count());")
 MASTER_ADDR=${MASTER_ADDR:-localhost}
 NNODES=${WORLD_SIZE:-1}
 NODE_RANK=${RANK:-0}
@@ -23,7 +23,7 @@ DS_CONFIG="config/zero3_offload.yaml"
 run_training() {
     local DATA=$1
     local OUTPUT=$2
-    accelerate launch --config_file $DS_CONFIG --num_machines $NNODES --num_processes $WORLD_SIZE --machine_rank $NODE_RANK --main_process_ip $MASTER_ADDR --main_process_port $MASTER_PORT \
+    uv run accelerate launch --config_file $DS_CONFIG --num_machines $NNODES --num_processes $WORLD_SIZE --machine_rank $NODE_RANK --main_process_ip $MASTER_ADDR --main_process_port $MASTER_PORT \
     sft4xiyan.py \
         --save_only_model True \
         --resume False \
