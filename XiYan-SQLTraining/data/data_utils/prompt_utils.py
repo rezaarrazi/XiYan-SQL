@@ -199,7 +199,7 @@ def gen_train_prompt(idx: int, data_item: dict, task_type: str, use_english: boo
         # for more task type, you can add more template here
         raise ValueError(f"Unsupported sql_type: {task_type}")
 
-    output = f"\n{data_item["sql"]}\n```"
+    output = f"\n{data_item['sql']}\n```"
     conversation = [
         {
             "role": "user",
