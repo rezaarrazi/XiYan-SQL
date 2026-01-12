@@ -140,7 +140,12 @@ class Evaluator:
     def inference_accelerator(self, **infer_paras):
 
         print("------Model Running-------")
-        eval_json = read_json(self.test_data_path)[:40]
+        max_samples = infer_paras.get('max_samples', None)
+        eval_json = read_json(self.test_data_path)
+        if max_samples is None:
+            max_samples = len(eval_json)
+        eval_json = eval_json[:max_samples]
+
         print(f"{len(eval_json)} samples need to be processed...")
 
         def chunk_data(data, chunk_size):
@@ -210,9 +215,9 @@ def args_paser():
     parser.add_argument('--expr_version', type=str, default='xiyan_date', help='Experimental version as the saved name')
 
     parser.add_argument('--test_set_path', type=str, default='bird_evaluation/eval_set/bird_dev_mschema_0926_short.json', help='Path to test set')
-
+    parser.add_argument('--max_samples', type=int, default=None, help='Maximum number of samples to process')
     parser.add_argument('--batch_size', type=int, default=2, help='The size of parallel processing')
-    parser.add_argument('--use_flash_attention', type=bool, default=True, help='Whether to use Flash Attention.')
+    parser.add_argument('--use_flash_attention', action='store_true', default=False, help='Enable Flash Attention (default: disabled)')
     parser.add_argument('--prompt_type', type=str, default='PostgreSQL', help='The type of prompt')
 
     args = parser.parse_args()
@@ -226,7 +231,7 @@ if __name__ == "__main__":
                           batch_size=args.batch_size, device='auto')
     evaluator.model_init(args.use_flash_attention)
     # evaluator.inference_batch(save_interval=args.batch_size*10, temperature=0.01)
-    evaluator.inference_accelerator(temperature=0.01)
+    evaluator.inference_accelerator(temperature=0.01, max_samples=args.max_samples)
 
 
 

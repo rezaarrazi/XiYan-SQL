@@ -331,7 +331,98 @@ Location: `data/configs/datasets_nl2sql_standard.json`
 
 ## Model Evaluation
 
-### Run Inference
+### Overview
+
+The evaluation pipeline consists of two steps:
+1. **Inference**: Generate SQL predictions from the model
+2. **Evaluation**: Execute predictions against databases and compare with ground truth
+
+### Step 1: Prepare Test Data
+
+The framework supports using **BIRD minidev** dataset (500 samples) for evaluation.
+
+#### Option A: Use Pre-prepared BIRD minidev
+
+If you already extracted the minidev dataset:
+
+```bash
+cd data
+
+# Process minidev raw data into XiYan format
+uv run python data_processing.py \
+  --raw_data_path data_warehouse/minidev/MINIDEV/mini_dev_sqlite.json \
+  --db_conn_config data_warehouse/minidev/db_conn.json \
+  --processed_data_dir data_warehouse/minidev/processed_data \
+  --save_mschema_dir data_warehouse/minidev/mschema \
+  --save_to_configs configs/datasets_minidev_test.json
+
+# Assemble into conversation format for inference
+uv run python data_assembler.py \
+  --dataset_type test \
+  --dataset_config_path configs/datasets_minidev_test.json \
+  --save_path data_warehouse/minidev/minidev_test_conversations.json
+
+# Copy to evaluation directory
+mkdir -p ../evaluation/bird_evaluation
+cp data_warehouse/minidev/minidev_test_conversations.json \
+   ../evaluation/bird_evaluation/minidev_test.json
+```
+
+The `db_conn.json` should be in this format for SQLite:
+```json
+{
+  "dialect": "sqlite",
+  "db_host": "data_warehouse/minidev/MINIDEV/dev_databases"
+}
+```
+
+### Step 2: Run Baseline Evaluation (Optional)
+
+To establish a baseline, evaluate the **pretrained model before fine-tuning**:
+
+```bash
+cd evaluation
+
+# Run inference on pretrained model (flash attention disabled by default)
+bash sql_infer.sh \
+  ../train/model/Qwen/Qwen2.5-Coder-3B-Instruct \
+  baseline_pretrained \
+  bird_evaluation/minidev_test.json \
+  1
+
+# Or enable flash attention if available (optional 5th parameter)
+bash sql_infer.sh \
+  ../train/model/Qwen/Qwen2.5-Coder-3B-Instruct \
+  baseline_pretrained \
+  bird_evaluation/minidev_test.json \
+  1 \
+  true
+```
+
+**Script parameters**:
+1. `model_name_or_path`: Path to model
+2. `expr_version`: Experiment name
+3. `test_set_path`: Test dataset
+4. `batch_size`: Batch size (use 1 for variable-length prompts)
+5. `use_flash_attention`: Optional - pass `true` to enable (default: disabled)
+
+**Results location**: `bird_evaluation/output/baseline_pretrained/baseline_pretrained_YYYYMMDD_results.json`
+
+**Expected baseline performance**: Pretrained models typically generate **text explanations instead of SQL**, resulting in **~0% accuracy**. This demonstrates the value of fine-tuning.
+
+You can also evaluate the baseline immediately:
+
+```bash
+bash sql_eval.sh \
+  bird_evaluation/output/baseline_pretrained/baseline_pretrained_*_results.json \
+  bird_evaluation/minidev_test.json \
+  ../data/data_warehouse/minidev/db_conn.json \
+  bird_evaluation/output/baseline_pretrained/baseline_scores.json
+```
+
+### Step 3: Run Inference on Your Trained Model
+
+After training and merging your model, run inference:
 
 ```bash
 cd evaluation
@@ -339,40 +430,102 @@ cd evaluation
 bash sql_infer.sh \
   ../train/merged_models/nl2sql_3b_standard \
   nl2sql_eval \
-  bird_evaluation/eval_set/bird_dev.json \
+  bird_evaluation/minidev_test.json \
   4
 ```
 
 **Parameters**:
 - `model_name_or_path`: Path to merged model
-- `expr_version`: Experiment name
+- `expr_version`: Experiment name (used in output filename)
 - `test_set_path`: Test dataset path
-- `batch_size`: Concurrent processing size
+- `batch_size`: Number of samples to process concurrently (use 1 for variable-length prompts)
 
-### Evaluate Results
+**Output**: `bird_evaluation/output/nl2sql_eval/nl2sql_eval_YYYYMMDD_results.json`
+
+**Inference speed**: ~1.5-2 seconds per sample on single GPU
+
+### Step 4: Evaluate Execution Accuracy
+
+Evaluate the generated SQL by executing against real databases:
 
 ```bash
+cd evaluation
+
 bash sql_eval.sh \
-  bird_evaluation/output/nl2sql_eval/nl2sql_eval_results.json \
-  bird_evaluation/eval_set/bird_dev.json \
-  bird_evaluation/db_conn.json \
+  bird_evaluation/output/nl2sql_eval/nl2sql_eval_20260112_results.json \
+  bird_evaluation/minidev_test.json \
+  ../data/data_warehouse/minidev/db_conn.json \
   bird_evaluation/output/nl2sql_eval/scores.json
 ```
 
 **Parameters**:
-- `pred_sql_path`: Predicted SQL path
-- `test_sql_path`: Test set with ground-truth SQL
-- `db_conn_config`: Database configuration
-- `save_eval_path`: Path to save evaluation results
+- `pred_sql_path`: Path to inference results (from Step 3)
+- `test_sql_path`: Test set with ground-truth SQL and questions
+- `db_conn_config`: Database connection configuration
+- `save_eval_path`: Path to save detailed evaluation results
+
+**Output**:
+```
+*********Evaluation Results*********
+ex                     : 65.40
+bird_ex                : 68.20
+exec                   : 62.80
+```
+
+**Metrics explained**:
+- `ex`: Exact match accuracy (SQL string exactly matches ground truth)
+- `bird_ex`: BIRD exact match (normalized comparison, ignores whitespace/aliases)
+- `exec`: Execution accuracy (both queries return same results when executed)
+
+**Execution accuracy is the most important metric** - it tests functional correctness.
+
+### Step 5: Compare Results
+
+Compare baseline vs fine-tuned model:
+
+```bash
+# Baseline (pretrained model)
+# Result: ~0% accuracy (generates text, not SQL)
+cat bird_evaluation/output/baseline_pretrained/baseline_pretrained_*_results.json | \
+  python3 -c "import json, sys; data=json.load(sys.stdin); \
+  print(f'Baseline predictions (first 3):'); \
+  [print(f'{i+1}. {r[\"pred_sql\"][:80]}...') for i,r in enumerate(data[:3])]"
+
+# Fine-tuned model
+# Result: ~55-65% accuracy (generates valid SQL)
+bash sql_eval.sh \
+  bird_evaluation/output/nl2sql_eval/nl2sql_eval_*_results.json \
+  bird_evaluation/minidev_test.json \
+  ../data/data_warehouse/minidev/db_conn.json \
+  bird_evaluation/output/nl2sql_eval/comparison.json
+```
+
+### Troubleshooting
+
+**Issue: "Unable to create tensor, activate padding/truncation"**
+- **Solution**: Reduce `batch_size` to 1 in sql_infer.sh (variable-length prompts need padding)
+
+**Issue: "Flash attention not installed"**
+- **Solution**: The inference scripts automatically handle this. Flash attention is optional.
+
+**Issue: "Database not found"**
+- **Solution**: Verify `db_host` in `db_conn.json` points to correct database directory path
+
+**Issue: Inference too slow**
+- **Solution**: Use larger batch_size (e.g., 4 or 8) if all prompts have similar length
+- **Solution**: Use multi-GPU inference with accelerate (see sql_infer.sh commented section)
 
 ### Expected Performance
 
-| Model | Execution Accuracy (BIRD Dev) | Inference Speed |
-|-------|-------------------------------|-----------------|
-| 3B Single (Task 1 only) | ~55-60% | ~15-20 samples/sec |
-| 3B (Task 1 + Self-Refine) | ~58-63% | ~15-20 samples/sec |
+| Model | Execution Accuracy (BIRD minidev) | Inference Speed |
+|-------|-----------------------------------|-----------------|
+| **Baseline (pretrained)** | **~0%** (no SQL generated) | ~1.5s/sample |
+| 3B Fine-tuned (Task 1 only) | ~55-60% | ~1.5s/sample |
+| 3B (Task 1 + Self-Refine) | ~58-63% | ~1.5s/sample |
 | Paper's SQLG₁ (all 4 tasks) | ~60-65% | - |
 | Paper's 4-generator ensemble | ~67-72% | - |
+
+**Note**: Single-task training (Text-to-SQL only) achieves solid baseline performance. Adding self-refine and other tasks incrementally improves accuracy.
 
 ---
 

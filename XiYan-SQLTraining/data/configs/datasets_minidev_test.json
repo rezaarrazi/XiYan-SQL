@@ -1,0 +1,9 @@
+{
+  "minidev_processed_data_mini_dev_sqlite_nl2sqlite": {
+    "data_path": "data_warehouse/minidev/processed_data/mini_dev_sqlite_nl2sqlite.json",
+    "sample_num": -1,
+    "sum_num": 500,
+    "task_name": "nl2sqlite",
+    "data_aug": true
+  }
+}

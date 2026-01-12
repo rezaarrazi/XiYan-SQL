@@ -217,3 +217,52 @@ def gen_train_prompt(idx: int, data_item: dict, task_type: str, use_english: boo
     }
     return train_item
 
+def gen_test_prompt(idx: int, data_item: dict, task_type: str, use_english: bool = True) -> dict:
+    """
+    generate test samples
+    Args:
+        idx: sample index
+        data_item: data item dict
+        task_type: task type (nl2sqlite, nl2postgresql, etc.)
+        use_english: if True, use English templates; if False, use Chinese templates
+    """
+    question = data_item["question"]
+    evidence = data_item.get("evidence", "")
+    db_schema = data_item["db_schema"]
+    task_type = task_type.lower()
+
+    if task_type == "nl2sqlite":
+        prompt = NL2SQLITE_TEMPLATE_EN.format(db_schema=db_schema.strip(), question=question, evidence=evidence) if use_english else NL2SQLITE_TEMPLATE.format(db_schema=db_schema.strip(), question=question, evidence=evidence)
+    elif task_type == "nl2postgresql":
+        prompt = NL2PGSQL_TEMPLATE_EN.format(db_schema=db_schema.strip(), question=question, evidence=evidence) if use_english else NL2PGSQL_TEMPLATE.format(db_schema=db_schema.strip(), question=question, evidence=evidence)
+    elif task_type == "nl2mysql":
+        prompt = NL2MYSQL_TEMPLATE.format(db_schema=db_schema.strip(), question=question, evidence=evidence)
+    elif task_type == "self_refine":
+        error_sql = data_item["pred_sql_res"][0]
+        error_info = data_item["pred_sql_res"][1]
+        prompt = SQLITE_SELF_REFINE_TEMPLATE.format(db_schema=db_schema.strip(), question=question, evidence=evidence, error_sql=error_sql, error_info=error_info)
+    elif task_type == "cypher":
+        prompt = NL2CYPHER_TEMPLATE.format(db_schema=db_schema.strip(), question=question, evidence=evidence)
+    else:
+        # for more task type, you can add more template here
+        raise ValueError(f"Unsupported sql_type: {task_type}")
+
+    output = data_item["sql"]
+    conversation = [
+        {
+            "role": "user",
+            "content": prompt
+        },
+        {
+            "role": "assistant",
+            "content": output
+        }
+    ]
+    test_item = {
+        "id": idx,
+        "conversations": conversation,
+        "sql_type": task_type,
+        "sql": data_item["sql"],
+        "db_name": data_item["db_name"]
+    }
+    return test_item

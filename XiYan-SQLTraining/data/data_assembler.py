@@ -9,11 +9,13 @@ import argparse
 from data_utils.common_utils import read_json, write_json
 from data_utils.aug_ops.augment import AugCompose
 from data_utils.aug_ops.schema_aug import SchemaShuffle, SchemaFilter, SchemaPermute, SQLTranslate
-from data_utils.prompt_utils import gen_train_prompt
+from data_utils.prompt_utils import gen_train_prompt, gen_test_prompt
 from transformers import AutoTokenizer
 
 def main(args):
-    
+    dataset_type = args.dataset_type
+    assert dataset_type in ['train', 'test'], "Dataset type must be either 'train' or 'test'"
+
     # Loading data source configuration
     dataset_config = read_json(args.dataset_config_path)
     token_sample = False
@@ -45,7 +47,12 @@ def main(args):
 
             if data_aug:
                 item = augment_compose(item)
-            train_item = gen_train_prompt(global_cn, item, task_type)
+            
+            if dataset_type == 'train':
+                train_item = gen_train_prompt(global_cn, item, task_type)
+            else:
+                train_item = gen_test_prompt(global_cn, item, task_type)
+
             if token_sample:
                 # You can sample by token as needed. The following is just an example of truncation
                 LONG_MAX_LEN = 1024 * 12
@@ -71,6 +78,8 @@ def main(args):
 
 def args_paser():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset_type', type=str, default='train', choices=['train', 'test'],
+                        help='Dataset type: train or test')
     parser.add_argument('--dataset_config_path', type=str, default='/path/to/configs/dataset_example.json',
                         help='Path to dataset config file')
     parser.add_argument('--save_path', type=str, default='../train/datasets/dataset_xxxx.json',

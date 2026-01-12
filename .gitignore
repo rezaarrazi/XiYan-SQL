@@ -265,3 +265,6 @@ XiYan-SQLTraining/data/data_warehouse/
 XiYan-SQLTraining/train/model/
 XiYan-SQLTraining/train/output/
 XiYan-SQLTraining/train/merged_models/
+
+# XiYan-SQLTraining: Evaluation data (any directory in evaluation folder with suffix "_evaluation")
+XiYan-SQLTraining/evaluation/*_evaluation/
