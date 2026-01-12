@@ -108,6 +108,13 @@ def train():
     # load data
     train_data = load_dataset('json', data_files=data_args.data_path)['train']
     train_data = train_data.map(preprocess_data, remove_columns=train_data.column_names, num_proc=16, load_from_cache_file=True)
+    
+    # Shuffle training data if requested
+    if data_args.do_shuffle:
+        print(f"🔀 Shuffling training data with seed={training_args.seed}")
+        train_data = train_data.shuffle(seed=training_args.seed)
+        print(f"✅ Training data shuffled ({len(train_data)} samples)")
+    
     eval_data = None
     if data_args.eval_data_path:
         eval_data_raw = load_dataset('json', data_files=data_args.eval_data_path)['train']
