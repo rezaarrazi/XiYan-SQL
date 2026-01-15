@@ -173,7 +173,7 @@ class Evaluator:
                     )
                     texts.append(text)
 
-                model_inputs = self.tokenizer(texts, return_tensors="pt").to(accelerator.device)
+                model_inputs = self.tokenizer(texts, padding=True, truncation=True, return_tensors="pt", max_length=4096).to(accelerator.device)
                 generated_ids = self.model.generate(
                     **model_inputs,
                     pad_token_id=self.tokenizer.pad_token_id,
