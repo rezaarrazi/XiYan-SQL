@@ -31,6 +31,54 @@ IGNORE_TOKEN_ID = -100
 call_counter = 0
 
 
+def clean_sql_response(content):
+    """Extract only SQL from response, removing any explanations."""
+    if not content:
+        return content
+    
+    content = content.strip()
+    
+    # If wrapped in markdown code blocks, extract SQL
+    if '```sql' in content:
+        parts = content.split('```sql')
+        if len(parts) > 1:
+            sql_part = parts[1].split('```')[0].strip()
+            return sql_part
+    
+    # If wrapped in plain code blocks
+    if '```' in content:
+        parts = content.split('```')
+        if len(parts) > 1:
+            sql_part = parts[1].strip()
+            # Check if it looks like SQL
+            if any(sql_part.upper().startswith(kw) for kw in ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP', 'WITH']):
+                return sql_part
+    
+    # If starts with SQL keywords, take until explanation starts
+    sql_keywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP', 'WITH']
+    for keyword in sql_keywords:
+        if content.upper().startswith(keyword):
+            # Find the SQL part (until explanation starts)
+            lines = content.split('\n')
+            sql_lines = []
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                # Stop if we hit explanation patterns
+                explanation_patterns = ['this query', 'here\'s', 'to find', 'you can use', 
+                                      'the query', 'this will', 'selects', 'groups', 
+                                      'This query', 'Here\'s', 'To find']
+                if any(pattern in line for pattern in explanation_patterns):
+                    # Only break if we already have some SQL
+                    if len(sql_lines) > 0:
+                        break
+                sql_lines.append(line)
+            return ' '.join(sql_lines)
+    
+    return content
+
+
 def train():
 
     parser = transformers.HfArgumentParser(
@@ -48,31 +96,44 @@ def train():
 
     def preprocess_data(example):
         conversations = example['conversations']
+        
+        # Clean the target SQL to remove any explanations
+        target = clean_sql_response(conversations[1]['content'])
+        
+        # Get prompt part (user message only) - this is what we want to mask
+        prompt_part = tokenizer.apply_chat_template(
+            conversations[:1],
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        
+        # Get full text (user + assistant) for training
         text = tokenizer.apply_chat_template(
             conversations,
             tokenize=False,
-            # chat_template=TEMPLATE,
             add_generation_prompt=False
         )
-        encodings = tokenizer(text, truncation=True)
-        target = conversations[1]['content']
-        idx = text.find(target)
-        target_idx = encodings.char_to_token(idx)
-        labels = encodings['input_ids'].copy()
-        # prompt_part = tokenizer.apply_chat_template(
-        #     conversations[:1],
-        #     # chat_template=TEMPLATE,
-        #     tokenize=False,
-        #     add_generation_prompt=True
-        # )
-        # encodings = tokenizer(text, truncation=True)
-        # target_idx = len(tokenizer(prompt_part)['input_ids'])
-        # labels = encodings['input_ids'].copy()
-
+        
+        # Tokenize both to get accurate positions
+        prompt_encodings = tokenizer(prompt_part, truncation=True, return_offsets_mapping=False)
+        full_encodings = tokenizer(text, truncation=True, return_offsets_mapping=False)
+        
+        # Find where assistant response starts (after prompt)
+        target_idx = len(prompt_encodings['input_ids'])
+        
+        labels = full_encodings['input_ids'].copy()
+        
+        # Mask everything before the assistant response
         if target_idx:
             labels[:target_idx] = [IGNORE_TOKEN_ID] * target_idx
-
-        assert len(labels) == len(encodings['input_ids'])
+        
+        # Ensure labels match input_ids length (handle truncation edge cases)
+        if len(labels) != len(full_encodings['input_ids']):
+            min_len = min(len(labels), len(full_encodings['input_ids']))
+            labels = labels[:min_len]
+            full_encodings['input_ids'] = full_encodings['input_ids'][:min_len]
+        
+        assert len(labels) == len(full_encodings['input_ids'])
         # Route different dialects under momq, ignoring in normal mode.
         if training_args.enable_dialect_router:
             sql_type = example.get("sql_type", "sqlite").lower()
@@ -86,8 +147,8 @@ def train():
                 labels[0] = min(3, training_args.dialect_num - 1)
             elif sql_type == 'ngql':
                 labels[0] = min(4, training_args.dialect_num - 1)
-        encodings['labels'] = labels
-        return encodings
+        full_encodings['labels'] = labels
+        return full_encodings
 
     def preprocess_eval_data(example):
         conversations = example['conversations'][:1]

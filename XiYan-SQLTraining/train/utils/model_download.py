@@ -37,6 +37,7 @@ def main():
         '4': ('Qwen/Qwen2.5-Coder-7B-Instruct', '7B - Higher accuracy'),
         '5': ('Qwen/Qwen2.5-Coder-14B-Instruct', '14B - Best single model'),
         '6': ('Qwen/Qwen2.5-Coder-32B-Instruct', '32B - Maximum capability'),
+        '7': ('XGenerationLab/XiYanSQL-QwenCoder-3B-2502', '3B - Fine-tuned for XiYan-SQL'),
     }
 
     # Check for command-line argument
@@ -54,7 +55,7 @@ def main():
             print(f"     {desc}")
         print()
 
-        choice = input("Select model (1-6) [3]: ").strip() or '3'
+        choice = input("Select model (1-7) [3]: ").strip() or '3'
 
         if choice not in models:
             print(f"❌ Invalid choice: {choice}")

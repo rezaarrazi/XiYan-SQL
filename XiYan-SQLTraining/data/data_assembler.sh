@@ -1,5 +1,7 @@
 DATASET_CONFIG_PATH=${1}
 SAVE_PATH=${2}
+DATASET_TYPE=${3}
+
 DATASET_CONFIG_PATH=${DATASET_CONFIG_PATH:-"configs/datasets_example.json"}
 SAVE_PATH=${SAVE_PATH:-"output/train_examples.json"}
 DATASET_TYPE=${DATASET_TYPE:-"train"}

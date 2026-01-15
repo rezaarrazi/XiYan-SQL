@@ -1,0 +1,9 @@
+{
+  "train_nl2sqlite_test": {
+    "data_path": "data_warehouse/train/processed_data/train_nl2sqlite_test.json",
+    "sample_num": -1,
+    "sum_num": 502,
+    "task_name": "nl2sqlite",
+    "data_aug": false
+  }
+}
