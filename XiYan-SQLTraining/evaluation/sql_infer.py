@@ -159,45 +159,59 @@ class Evaluator:
         data_chunks = list(chunk_data(eval_json, self.batch_size))
 
         final_result = []
-        for idx, t in tqdm(enumerate(data_chunks)):
-            with accelerator.split_between_processes(t, ) as batch:
-                texts = []
-                for row in batch:
-                    # prompt = gen_train_prompt(idx, row, self.sql_dialect)
-                    conversations = row['conversations'][:1]
-                    text = self.tokenizer.apply_chat_template(
-                        conversations,
-                        tokenize=False,
-                        # chat_template=TEMPLATE,
-                        add_generation_prompt=True
-                    )
-                    texts.append(text)
-
-                model_inputs = self.tokenizer(texts, padding=True, truncation=True, return_tensors="pt", max_length=4096).to(accelerator.device)
-                generated_ids = self.model.generate(
-                    **model_inputs,
-                    pad_token_id=self.tokenizer.pad_token_id,
-                    eos_token_id=self.tokenizer.eos_token_id,
-                    max_new_tokens=512,
-                    temperature=infer_paras.get('temperature', None),
-                    num_beams=1,
-                    top_p=None,
-                    do_sample=False,
+        # Optimize for single GPU: skip accelerator overhead if only 1 process
+        use_accelerator_split = accelerator.num_processes > 1
+        
+        def process_batch(batch_data, batch_idx):
+            """Process a batch of data"""
+            texts = []
+            for row in batch_data:
+                # prompt = gen_train_prompt(idx, row, self.sql_dialect)
+                conversations = row['conversations'][:1]
+                text = self.tokenizer.apply_chat_template(
+                    conversations,
+                    tokenize=False,
+                    # chat_template=TEMPLATE,
+                    add_generation_prompt=True
                 )
+                texts.append(text)
+
+            model_inputs = self.tokenizer(texts, padding=True, truncation=True, return_tensors="pt", max_length=4096).to(accelerator.device)
+            generated_ids = self.model.generate(
+                **model_inputs,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+                max_new_tokens=512,
+                temperature=infer_paras.get('temperature', None),
+                num_beams=1,
+                top_p=None,
+                do_sample=False,
+            )
+            # Only clear cache every 10 batches to avoid slowdown (was clearing every batch)
+            if (batch_idx + 1) % 10 == 0:
                 torch.cuda.empty_cache()
-                generated_ids = [
-                    output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-                ]
-                response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+            
+            generated_ids = [
+                output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+            ]
+            response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
 
-                # calc index
-                # num_samples_per_process, num_extras = divmod(len(t), accelerator.num_processes)
-                # start_index = accelerator.process_index * num_samples_per_process + min(accelerator.process_index, num_extras)
+            # calc index
+            # num_samples_per_process, num_extras = divmod(len(t), accelerator.num_processes)
+            # start_index = accelerator.process_index * num_samples_per_process + min(accelerator.process_index, num_extras)
 
-                for i in range(len(response)):
-                    batch[i]['pred_sql'] = response[i]
-                    batch[i]['sql'] = batch[i]['conversations'][1]['content']
-                    final_result.append(batch[i])
+            for i in range(len(response)):
+                batch_data[i]['pred_sql'] = response[i]
+                batch_data[i]['sql'] = batch_data[i]['conversations'][1]['content']
+                final_result.append(batch_data[i])
+        
+        for idx, t in tqdm(enumerate(data_chunks)):
+            # Skip accelerator overhead for single GPU
+            if use_accelerator_split:
+                with accelerator.split_between_processes(t, ) as batch:
+                    process_batch(batch, idx)
+            else:
+                process_batch(t, idx)
 
         final_result_gathered = gather_object(final_result)
         final_result_reordered = sorted(final_result_gathered, key=lambda x: x['idx'])
